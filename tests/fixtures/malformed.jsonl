@@ -1,0 +1,6 @@
+{"type":"user","timestamp":"2026-09-05T12:00:00.000Z","uuid":"m-1","sessionId":"sess-malformed","message":{"role":"user","content":"hello"}}
+{not json at all
+[1, 2, 3]
+{"type":"user","timestamp":"not-a-timestamp","uuid":"m-2","sessionId":"sess-malformed","message":{"role":"user","content":"bad timestamp"}}
+{"type":"user","timestamp":"2026-09-05T12:00:01.000Z","uuid":"m-3","sessionId":"sess-malformed","message":{"role":"user","content":"carries extra fields"},"weather":"sunny","mood":7}
+{"type":"assistant","timestamp":"2026-09-05T12:00:02.000Z","uuid":"m-4","sessionId":"sess-malformed","message":{"role":"assistant","model":"claude-fixture-sonnet","content":[{"type":"text","text":"ok"}],"usage":{"input_tokens":10,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":5}}}

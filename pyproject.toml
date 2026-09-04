@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent2perfetto"
+dynamic = ["version"]
+description = "Convert agent session logs (Claude Code JSONL) into Perfetto/Chrome trace JSON for ui.perfetto.dev"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "agent2perfetto contributors" }]
+keywords = ["perfetto", "trace", "claude-code", "llm", "agent", "observability"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Debuggers",
+]
+dependencies = []
+
+[project.scripts]
+agent2perfetto = "agent2perfetto.cli:main"
+
+[project.urls]
+Homepage = "https://ui.perfetto.dev"
+
+[tool.setuptools.dynamic]
+version = { attr = "agent2perfetto.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

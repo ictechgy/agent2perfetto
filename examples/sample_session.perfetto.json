@@ -1,0 +1,274 @@
+{
+ "traceEvents": [
+  {
+   "ph": "M",
+   "name": "process_name",
+   "pid": 1,
+   "tid": 0,
+   "ts": 0,
+   "args": {
+    "name": "agent session sess-fixture-0001"
+   }
+  },
+  {
+   "ph": "M",
+   "name": "thread_name",
+   "pid": 1,
+   "tid": 1,
+   "ts": 0,
+   "args": {
+    "name": "turns"
+   }
+  },
+  {
+   "ph": "M",
+   "name": "thread_name",
+   "pid": 1,
+   "tid": 2,
+   "ts": 0,
+   "args": {
+    "name": "tools"
+   }
+  },
+  {
+   "ph": "i",
+   "cat": "user",
+   "name": "user prompt",
+   "pid": 1,
+   "tid": 1,
+   "ts": 0,
+   "s": "t",
+   "args": {
+    "preview": "List the files, then run the tests."
+   }
+  },
+  {
+   "ph": "C",
+   "cat": "context",
+   "name": "context tokens",
+   "pid": 1,
+   "tid": 1,
+   "ts": 1000000,
+   "args": {
+    "ctx_total": 350,
+    "ctx_input": 100,
+    "ctx_cache_read": 200,
+    "ctx_cache_create": 50
+   }
+  },
+  {
+   "ph": "X",
+   "cat": "turn",
+   "name": "assistant turn",
+   "pid": 1,
+   "tid": 1,
+   "ts": 1000000,
+   "dur": 1000000,
+   "args": {
+    "model": "claude-fixture-sonnet",
+    "uuid": "u-0002",
+    "usage": {
+     "input_tokens": 100,
+     "output_tokens": 90,
+     "cache_creation_input_tokens": 50,
+     "cache_read_input_tokens": 200
+    }
+   }
+  },
+  {
+   "ph": "X",
+   "cat": "tool_call",
+   "name": "Bash",
+   "pid": 1,
+   "tid": 2,
+   "ts": 1000000,
+   "dur": 1000000,
+   "args": {
+    "tool_use_id": "toolu_001",
+    "input": {
+     "command": "ls -la"
+    },
+    "usage": {
+     "input_tokens": 100,
+     "output_tokens": 90,
+     "cache_creation_input_tokens": 50,
+     "cache_read_input_tokens": 200
+    }
+   }
+  },
+  {
+   "ph": "s",
+   "cat": "tool_flow",
+   "name": "tool call",
+   "pid": 1,
+   "tid": 2,
+   "ts": 1000000,
+   "id": 1
+  },
+  {
+   "ph": "X",
+   "cat": "tool_result",
+   "name": "result Bash",
+   "pid": 1,
+   "tid": 2,
+   "ts": 2000000,
+   "dur": 1000000,
+   "args": {
+    "tool_use_id": "toolu_001",
+    "is_error": false,
+    "result_preview": "file_a.py\nfile_b.py"
+   }
+  },
+  {
+   "ph": "f",
+   "cat": "tool_flow",
+   "name": "tool call",
+   "pid": 1,
+   "tid": 2,
+   "ts": 2000000,
+   "id": 1,
+   "bp": "e"
+  },
+  {
+   "ph": "C",
+   "cat": "context",
+   "name": "context tokens",
+   "pid": 1,
+   "tid": 1,
+   "ts": 3000000,
+   "args": {
+    "ctx_total": 780,
+    "ctx_input": 130,
+    "ctx_cache_read": 600,
+    "ctx_cache_create": 50
+   }
+  },
+  {
+   "ph": "X",
+   "cat": "turn",
+   "name": "assistant turn",
+   "pid": 1,
+   "tid": 1,
+   "ts": 3000000,
+   "dur": 2000000,
+   "args": {
+    "model": "claude-fixture-sonnet",
+    "uuid": "u-0004",
+    "usage": {
+     "input_tokens": 30,
+     "output_tokens": 120,
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 400
+    }
+   }
+  },
+  {
+   "ph": "X",
+   "cat": "tool_call",
+   "name": "Bash",
+   "pid": 1,
+   "tid": 2,
+   "ts": 3000000,
+   "dur": 2000000,
+   "args": {
+    "tool_use_id": "toolu_002",
+    "input": {
+     "command": "python -m pytest -q"
+    },
+    "usage": {
+     "input_tokens": 30,
+     "output_tokens": 120,
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 400
+    }
+   }
+  },
+  {
+   "ph": "s",
+   "cat": "tool_flow",
+   "name": "tool call",
+   "pid": 1,
+   "tid": 2,
+   "ts": 3000000,
+   "id": 2
+  },
+  {
+   "ph": "X",
+   "cat": "tool_result",
+   "name": "result Bash",
+   "pid": 1,
+   "tid": 2,
+   "ts": 5000000,
+   "dur": 1500000,
+   "args": {
+    "tool_use_id": "toolu_002",
+    "is_error": false,
+    "result_preview": "3 passed in 0.02s"
+   }
+  },
+  {
+   "ph": "f",
+   "cat": "tool_flow",
+   "name": "tool call",
+   "pid": 1,
+   "tid": 2,
+   "ts": 5000000,
+   "id": 2,
+   "bp": "e"
+  },
+  {
+   "ph": "C",
+   "cat": "context",
+   "name": "context tokens",
+   "pid": 1,
+   "tid": 1,
+   "ts": 6500000,
+   "args": {
+    "ctx_total": 1310,
+    "ctx_input": 150,
+    "ctx_cache_read": 1100,
+    "ctx_cache_create": 60
+   }
+  },
+  {
+   "ph": "X",
+   "cat": "turn",
+   "name": "assistant turn",
+   "pid": 1,
+   "tid": 1,
+   "ts": 6500000,
+   "dur": 1000000,
+   "args": {
+    "model": "claude-fixture-opus",
+    "uuid": "u-0006",
+    "usage": {
+     "input_tokens": 20,
+     "output_tokens": 40,
+     "cache_creation_input_tokens": 10,
+     "cache_read_input_tokens": 500
+    },
+    "dur_estimated": true
+   }
+  }
+ ],
+ "displayTimeUnit": "ms",
+ "metadata": {
+  "source": "claude-code-jsonl",
+  "converter": "agent2perfetto 0.1.0",
+  "converter_version": "0.1.0",
+  "models_observed": [
+   "claude-fixture-opus",
+   "claude-fixture-sonnet"
+  ],
+  "generated_at": "2026-09-04T23:56:14.776676Z",
+  "approximation_note": "ctx_* counters are cumulative sums of the usage fields reported per assistant call (input, cache_read, cache_creation tokens). They approximate context-window occupancy and are not provider measurements. Slices whose duration has no later event to bound it are estimates.",
+  "warnings": {
+   "malformed_lines": 0,
+   "skipped_records": 0,
+   "records_with_unknown_fields": 0
+  },
+  "base_timestamp": "2026-09-05T12:00:00.000000Z",
+  "base_timestamp_epoch_us": 1788609600000000,
+  "trace_clock": "microseconds since base_timestamp"
+ }
+}
