@@ -30,7 +30,7 @@ dependencies = []
 agent2perfetto = "agent2perfetto.cli:main"
 
 [project.urls]
-Homepage = "https://ui.perfetto.dev"
+Homepage = "https://github.com/ictechgy/agent2perfetto"
 
 [tool.setuptools.dynamic]
 version = { attr = "agent2perfetto.__version__" }
