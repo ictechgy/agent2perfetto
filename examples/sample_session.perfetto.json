@@ -266,13 +266,13 @@
  "displayTimeUnit": "ms",
  "metadata": {
   "source": "claude-code-jsonl",
-  "converter": "agent2perfetto 0.2.1",
-  "converter_version": "0.2.1",
+  "converter": "agent2perfetto 0.2.2",
+  "converter_version": "0.2.2",
   "models_observed": [
    "claude-fixture-opus",
    "claude-fixture-sonnet"
   ],
-  "generated_at": "2026-09-05T16:21:53.214864Z",
+  "generated_at": "2026-09-05T16:52:05.377681Z",
   "approximation_note": "ctx_* counters estimate per-call context occupancy from the usage fields that assistant call reported (input + cache_read + cache_creation tokens). spend_* counters are cumulative sums of the same fields over the session (billing trajectory, not context size). Both come from client-reported usage, not provider measurements; treat them as approximate. Slices whose duration has no later event to bound it are estimates.",
   "warnings": {
    "malformed_lines": 0,

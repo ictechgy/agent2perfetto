@@ -40,7 +40,13 @@ class LaneSample:
 
 
 def compute_context_lanes(turns) -> list:
-    """Return one LaneSample per model-call turn with occupancy + spend values."""
+    """Return one LaneSample per model-call turn with occupancy + spend values.
+
+    Turns with an empty usage dict ({} — the adapter had no usage to report,
+    e.g. a synthesized turn that only carries tool calls) produce no sample:
+    "unknown" must not draw the counter to zero. A reported all-zeros usage
+    still emits a zero sample (the call claimed those zeros).
+    """
     cum = {
         "input_tokens": 0,
         "cache_creation_input_tokens": 0,
@@ -48,7 +54,11 @@ def compute_context_lanes(turns) -> list:
     }
     samples = []
     ordered = sorted(
-        (t for t in turns if getattr(t, "kind", None) == KIND_MODEL_CALL),
+        (
+            t
+            for t in turns
+            if getattr(t, "kind", None) == KIND_MODEL_CALL and t.usage
+        ),
         key=lambda t: (t.epoch_us, t.seq),
     )
     for t in ordered:

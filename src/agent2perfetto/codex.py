@@ -205,7 +205,7 @@ def _ingest_message(payload: dict, epoch_us: int, timestamp_raw: str, session_id
                 vendor_type="response_item/message/assistant",
                 model=state.ctx.get("model"),
                 text=text,
-                usage={key: 0 for key in _usage_keys},
+                usage={},
             ),
             state,
         )
@@ -262,7 +262,7 @@ def _ingest_function_call(payload: dict, epoch_us: int, timestamp_raw: str, sess
                 kind=KIND_MODEL_CALL,
                 vendor_type="response_item/function_call",
                 model=state.ctx.get("model"),
-                usage={key: 0 for key in _usage_keys},
+                usage={},
             ),
             state,
         )
@@ -305,7 +305,7 @@ def _ingest_token_count(payload: dict, state: _State, session_id: str) -> None:
     if _is_empty_usage(usage):
         return
     turn = state.last_model_call.get(session_id)
-    if turn is not None and _is_empty_usage(turn.usage):
+    if turn is not None and not turn.usage:
         turn.usage = usage
 
 

@@ -180,7 +180,24 @@ def test_codex_usage_merge_rules():
     assert len(calls) == 2
     assert calls[0].usage["input_tokens"] == 10
     assert calls[0].usage["cache_read_input_tokens"] == 5
-    assert calls[1].usage["input_tokens"] == 0
+    assert calls[1].usage == {}  # only an all-zero event followed: stays unknown
+
+
+def test_codex_turn_without_usage_emits_no_counter_sample():
+    lines = [
+        json.dumps({
+            "timestamp": "2026-09-05T12:00:00.000Z", "type": "response_item",
+            "payload": {"type": "message", "role": "assistant",
+                        "content": [{"type": "output_text", "text": "no token_count follows"}]},
+        }),
+        json.dumps({
+            "timestamp": "2026-09-05T12:00:01.000Z", "type": "response_item",
+            "payload": {"type": "message", "role": "assistant",
+                        "content": [{"type": "output_text", "text": "neither here"}]},
+        }),
+    ]
+    trace = build_trace(parse_codex_lines(lines))
+    assert [e for e in trace["traceEvents"] if e["ph"] == "C"] == []
 
 
 def test_codex_function_call_without_preceding_message():
