@@ -58,7 +58,8 @@ python scripts/validate_trace.py examples/sample_session.perfetto.json
 | Tool calls         | complete slices named by tool (`Bash`, `Read`, …) on the **tools** thread       |
 | Tool results       | complete slices (`result <tool>`) on the **tools** thread                       |
 | Call → result      | flow arrows (`s`/`f` events paired by `tool_use_id`)                           |
-| Context occupancy  | counter tracks `ctx_total`, `ctx_input`, `ctx_cache_read`, `ctx_cache_create`   |
+| Context occupancy  | counter tracks `ctx_total`, `ctx_input`, `ctx_cache_read`, `ctx_cache_create` — per-call occupancy |
+| Session spend      | counter tracks `spend_total`, `spend_input`, `spend_cache_read`, `spend_cache_create` — cumulative |
 | User prompts       | instant markers on the **turns** thread                                        |
 
 Timeline rules (deterministic — same log in, same trace out):
@@ -68,16 +69,19 @@ Timeline rules (deterministic — same log in, same trace out):
 - A turn/tool slice runs from its message timestamp to the next event's timestamp (for a
   tool call, to its result's arrival). The final slice of a stream has nothing to bound it,
   so it gets a 1 s estimate flagged `"dur_estimated": true` in its args.
-- Counters are emitted at every assistant message: cumulative sums of the reported
-  `input_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens` (and their total).
+- Counters are emitted at every assistant message. `ctx_*` is **per-call occupancy**: the
+  `input_tokens`, `cache_read_input_tokens`, `cache_creation_input_tokens` that *that single
+  call* reported (plus their total) — the model's context on that turn. `spend_*` is the
+  **cumulative** sum of the same fields across the session — the billing trajectory.
 
 ## Approximation honesty
 
-The context lane is an **approximation**. `ctx_*` counters sum the usage fields each API call
-reported; they do not reproduce the provider-side context window (cache lifetime, truncation,
-and system-prompt composition are not observable from the log). Slice durations that had no
-bounding event are estimates. This note ships inside every trace under
-`metadata.approximation_note`, and the caveats above live in `metadata`.
+The context lane is an **approximation**. `ctx_*` counters report the usage fields each API
+call claimed; they do not reproduce the provider-side context window (cache lifetime,
+truncation, and system-prompt composition are not observable from the log). `spend_*`
+counters re-bill cached tokens every call, so they grow monotonically and are **not** context
+size. Slice durations that had no bounding event are estimates. This note ships inside every
+trace under `metadata.approximation_note`, and the caveats above live in `metadata`.
 
 ## Privacy: local by construction
 

@@ -7,7 +7,7 @@ import json
 from datetime import datetime, timezone
 
 from . import __version__
-from .lanes import APPROXIMATION_NOTE, compute_context_lanes
+from .lanes import APPROXIMATION_NOTE, OCC_COUNTERS, SPEND_COUNTERS, compute_context_lanes
 from .parser import Session
 
 SOURCE_NAME = "claude-code-jsonl"
@@ -20,7 +20,7 @@ CONTENT_PREVIEW_CHARS = 500
 # turn of a stream). Marked as estimated in the slice args.
 ESTIMATED_TURN_DUR_US = 1_000_000
 
-_COUNTER_ORDER = ("ctx_total", "ctx_input", "ctx_cache_read", "ctx_cache_create")
+_COUNTER_ORDER = OCC_COUNTERS + SPEND_COUNTERS
 _RANK = {
     "counter": 0,
     "turn": 1,
@@ -41,11 +41,27 @@ def _now_iso_z() -> str:
     return _iso_z(int(datetime.now(tz=timezone.utc).timestamp() * 1_000_000))
 
 
+def _shallow_truncate(value, limit: int = CONTENT_PREVIEW_CHARS):
+    """Bound a parsed JSON value before serialization: slice long strings and
+    cap collection width, so a multi-MB tool_result never gets fully
+    re-serialized just to preview 500 characters."""
+    if isinstance(value, str):
+        return value if len(value) <= limit else value[:limit] + " ..."
+    if isinstance(value, list):
+        trimmed = [_shallow_truncate(v, limit) for v in value[:8]]
+        if len(value) > 8:
+            trimmed.append("... (%d more items)" % (len(value) - 8))
+        return trimmed
+    if isinstance(value, dict):
+        out = {str(k): _shallow_truncate(v, limit) for k, v in list(value.items())[:8]}
+        if len(value) > 8:
+            out["..."] = "(%d more keys)" % (len(value) - 8)
+        return out
+    return value
+
+
 def _preview(content) -> str:
-    if isinstance(content, str):
-        text = content
-    else:
-        text = json.dumps(content, ensure_ascii=False, sort_keys=True)
+    text = json.dumps(_shallow_truncate(content), ensure_ascii=False, sort_keys=True)
     if len(text) > CONTENT_PREVIEW_CHARS:
         return text[:CONTENT_PREVIEW_CHARS] + " ... (truncated)"
     return text

@@ -53,10 +53,32 @@ def test_timestamps_monotonic_and_durations_nonnegative():
 def test_counter_values_match_hand_computed_sums():
     trace = build_valid()
     counters = [e for e in trace["traceEvents"] if e["ph"] == "C"]
+    # fixture usage per call: (input, cache_read, cache_create)
+    #   call 1 @1s: (100, 200, 50)   call 2 @3s: (30, 400, 0)   call 3 @6.5s: (20, 500, 10)
     expected = [
-        (1_000_000, {"ctx_total": 350, "ctx_input": 100, "ctx_cache_read": 200, "ctx_cache_create": 50}),
-        (3_000_000, {"ctx_total": 780, "ctx_input": 130, "ctx_cache_read": 600, "ctx_cache_create": 50}),
-        (6_500_000, {"ctx_total": 1310, "ctx_input": 150, "ctx_cache_read": 1100, "ctx_cache_create": 60}),
+        (
+            1_000_000,
+            {
+                "ctx_total": 350, "ctx_input": 100, "ctx_cache_read": 200, "ctx_cache_create": 50,
+                "spend_total": 350, "spend_input": 100, "spend_cache_read": 200, "spend_cache_create": 50,
+            },
+        ),
+        (
+            3_000_000,
+            {
+                # occupancy is THIS call only; spend is the running sum and
+                # its cache_read (600) re-bills tokens ctx_cache_read (400) already counts
+                "ctx_total": 430, "ctx_input": 30, "ctx_cache_read": 400, "ctx_cache_create": 0,
+                "spend_total": 780, "spend_input": 130, "spend_cache_read": 600, "spend_cache_create": 50,
+            },
+        ),
+        (
+            6_500_000,
+            {
+                "ctx_total": 530, "ctx_input": 20, "ctx_cache_read": 500, "ctx_cache_create": 10,
+                "spend_total": 1310, "spend_input": 150, "spend_cache_read": 1100, "spend_cache_create": 60,
+            },
+        ),
     ]
     assert [(c["ts"], c["args"]) for c in counters] == expected
 
@@ -106,3 +128,13 @@ def test_unknown_session_gets_process_named():
 def test_trace_events_are_json_serializable():
     trace = build_valid()
     json.dumps(trace)
+
+
+def test_preview_is_bounded_for_huge_payloads():
+    from agent2perfetto.trace import _preview
+
+    huge = "x" * (5 * 1024 * 1024)
+    assert len(_preview(huge)) < 600
+    assert len(_preview({"blob": huge, "n": 1})) < 2000
+    assert len(_preview([{"k": huge}] * 100)) < 2000
+    assert _preview({"k": "v"}) == '{"k": "v"}'

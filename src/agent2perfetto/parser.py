@@ -258,5 +258,8 @@ def parse_lines(lines, *, strict: bool = False, stderr=None) -> Session:
 
 
 def parse_file(path, *, strict: bool = False, stderr=None) -> Session:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    return parse_lines(text.splitlines(), strict=strict, stderr=stderr)
+    # Stream the file instead of read_text+splitlines: session logs embed
+    # tool outputs and can be hundreds of MB, and parse_lines only needs
+    # one line at a time.
+    with path.open("r", encoding="utf-8", errors="replace") as fh:
+        return parse_lines(fh, strict=strict, stderr=stderr)

@@ -13,7 +13,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "agent2perfetto contributors" }]
 keywords = ["perfetto", "trace", "claude-code", "llm", "agent", "observability"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",

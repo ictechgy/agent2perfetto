@@ -1,20 +1,32 @@
 """Context-lane computation.
 
-The context lane approximates how much conversation the model carried at each
-assistant turn by summing the token-usage fields the log reports per call.
-These are cumulative sums, not provider-side context-window measurements.
+Two counter families per assistant call:
+
+* ``ctx_*`` (occupancy) — the input / cache_read / cache_creation tokens
+  that *that single call* reported. Their sum approximates the context the
+  model carried on that turn.
+* ``spend_*`` — cumulative sums of the same fields across the session,
+  i.e. the billing trajectory. cache_read re-bills the same cached tokens
+  every call, so spend grows monotonically and is NOT context size.
+
+Both derive from client-reported usage; neither is a provider-side
+context-window measurement.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-LANE_COUNTERS = ("ctx_total", "ctx_input", "ctx_cache_read", "ctx_cache_create")
+OCC_COUNTERS = ("ctx_total", "ctx_input", "ctx_cache_read", "ctx_cache_create")
+SPEND_COUNTERS = ("spend_total", "spend_input", "spend_cache_read", "spend_cache_create")
 
 APPROXIMATION_NOTE = (
-    "ctx_* counters are cumulative sums of the usage fields reported per "
-    "assistant call (input, cache_read, cache_creation tokens). They "
-    "approximate context-window occupancy and are not provider measurements."
+    "ctx_* counters estimate per-call context occupancy from the usage "
+    "fields that assistant call reported (input + cache_read + "
+    "cache_creation tokens). spend_* counters are cumulative sums of the "
+    "same fields over the session (billing trajectory, not context size). "
+    "Both come from client-reported usage, not provider measurements; "
+    "treat them as approximate."
 )
 
 
@@ -26,7 +38,7 @@ class LaneSample:
 
 
 def compute_context_lanes(records) -> list:
-    """Return one LaneSample per assistant record, with cumulative token sums."""
+    """Return one LaneSample per assistant record with occupancy + spend values."""
     cum = {
         "input_tokens": 0,
         "cache_creation_input_tokens": 0,
@@ -38,15 +50,26 @@ def compute_context_lanes(records) -> list:
         key=lambda r: (r.epoch_us, r.seq),
     )
     for r in ordered:
-        for key in cum:
-            cum[key] += r.usage.get(key, 0)
+        call = {
+            "input_tokens": r.usage.get("input_tokens", 0),
+            "cache_creation_input_tokens": r.usage.get("cache_creation_input_tokens", 0),
+            "cache_read_input_tokens": r.usage.get("cache_read_input_tokens", 0),
+        }
         values = {
-            "ctx_input": cum["input_tokens"],
-            "ctx_cache_read": cum["cache_read_input_tokens"],
-            "ctx_cache_create": cum["cache_creation_input_tokens"],
+            "ctx_input": call["input_tokens"],
+            "ctx_cache_read": call["cache_read_input_tokens"],
+            "ctx_cache_create": call["cache_creation_input_tokens"],
         }
         values["ctx_total"] = (
             values["ctx_input"] + values["ctx_cache_read"] + values["ctx_cache_create"]
+        )
+        for key in cum:
+            cum[key] += call[key]
+        values["spend_input"] = cum["input_tokens"]
+        values["spend_cache_read"] = cum["cache_read_input_tokens"]
+        values["spend_cache_create"] = cum["cache_creation_input_tokens"]
+        values["spend_total"] = (
+            values["spend_input"] + values["spend_cache_read"] + values["spend_cache_create"]
         )
         samples.append(LaneSample(epoch_us=r.epoch_us, session_id=r.session_id, values=values))
     return samples
