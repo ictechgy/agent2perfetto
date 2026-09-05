@@ -138,3 +138,34 @@ def test_preview_is_bounded_for_huge_payloads():
     assert len(_preview({"blob": huge, "n": 1})) < 2000
     assert len(_preview([{"k": huge}] * 100)) < 2000
     assert _preview({"k": "v"}) == '{"k": "v"}'
+
+
+def test_tool_use_input_is_bounded_in_trace_args():
+    from agent2perfetto.parser import parse_lines
+    from agent2perfetto.trace import _shallow_truncate
+
+    huge = "y" * (5 * 1024 * 1024)
+    line = json.dumps(
+        {
+            "type": "assistant",
+            "timestamp": "2026-09-05T12:00:00.000Z",
+            "uuid": "u-huge",
+            "sessionId": "sess-huge",
+            "message": {
+                "role": "assistant",
+                "model": "m",
+                "content": [
+                    {"type": "tool_use", "id": "toolu_big", "name": "Write", "input": {"content": huge}}
+                ],
+                "usage": {"input_tokens": 1},
+            },
+        }
+    )
+    session = parse_lines([line])
+    assert len(session.records) == 1
+    trace = build_trace(session)
+    tool_events = [e for e in trace["traceEvents"] if e.get("cat") == "tool_call"]
+    assert len(tool_events) == 1
+    args_json = json.dumps(tool_events[0]["args"], ensure_ascii=False)
+    assert len(args_json) < 10_000  # a 10MB input must not become a 10MB trace
+    assert tool_events[0]["args"]["input"] == _shallow_truncate({"content": huge})

@@ -201,7 +201,7 @@ def build_trace(session: Session, *, generated_at: str | None = None) -> dict:
                         "dur": max(0, tool_dur),
                         "args": {
                             "tool_use_id": tu.id,
-                            "input": tu.input,
+                            "input": _shallow_truncate(tu.input),
                             "usage": dict(r.usage),
                         },
                     },

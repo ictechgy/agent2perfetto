@@ -198,7 +198,9 @@ def parse_lines(lines, *, strict: bool = False, stderr=None) -> Session:
             continue
         try:
             obj = json.loads(line)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
+            # RecursionError: pathological ~100k-deep nesting makes the json
+            # scanner blow the interpreter stack; treat it like malformed JSON.
             stats.malformed_lines += 1
             warn(f"line {line_no}: malformed JSON, line skipped")
             continue

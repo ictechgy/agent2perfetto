@@ -1,8 +1,9 @@
+import json
 from pathlib import Path
 
 import pytest
 
-from agent2perfetto.parser import StrictParseError, parse_file
+from agent2perfetto.parser import StrictParseError, parse_file, parse_lines
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -67,3 +68,28 @@ def test_empty_file_yields_no_records():
     session = parse_file(FIXTURES / "empty.jsonl")
     assert session.records == []
     assert session.stats.total_lines == 0
+
+
+def test_pathologically_deep_line_counted_not_fatal():
+    # ~100k-deep nesting makes json.loads raise RecursionError (probed: 20k is
+    # fine, 200k crashes) — it must count as malformed, not kill the run.
+    deep_line = "[" * 100_000 + "]" * 100_000
+    good_line = json.dumps(
+        {
+            "type": "user",
+            "timestamp": "2026-09-05T12:00:00.000Z",
+            "uuid": "u-deep",
+            "sessionId": "s",
+            "message": {"role": "user", "content": "hi"},
+        }
+    )
+    session = parse_lines([good_line, deep_line, good_line])
+    assert session.stats.total_lines == 3
+    assert session.stats.malformed_lines == 1
+    assert [r.uuid for r in session.records] == ["u-deep", "u-deep"]
+
+
+def test_pathologically_deep_line_raises_in_strict_mode():
+    deep_line = "[" * 100_000 + "]" * 100_000
+    with pytest.raises(StrictParseError):
+        parse_lines([deep_line], strict=True)
