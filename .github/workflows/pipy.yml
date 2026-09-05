@@ -12,6 +12,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: pypi  # must match the environment registered in the PyPI pending publisher
     permissions:
       contents: read
       id-token: write  # OIDC token for trusted publishing; no API token needed
