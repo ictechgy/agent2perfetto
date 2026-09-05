@@ -101,7 +101,11 @@ browser locally. Nothing is uploaded, no account exists, no telemetry exists.
 
 ## Limits & roadmap
 
-- v0.1 supports Claude Code JSONL only; OTel GenAI and subagent/async slices are planned.
+- v0.1 supported Claude Code JSONL only. v0.2 introduces the vendor-neutral
+  **Agent Trace IR** ([docs/agent-trace-ir.md](docs/agent-trace-ir.md)): new agent
+  logs (Codex next, then OTel GenAI) enter as adapters into the same IR, so the
+  same viewer, lanes, and PerfettoSQL work across harnesses. Subagent/async
+  slices are also planned.
 - Perfetto's JSON format is the legacy entry point; a proto-format exporter is on the roadmap.
 - Multiple `sessionId`s in one file become multiple processes; per-subagent processes and
   context-composition lanes (system prompt / files / MCP schemas) are future work.
@@ -115,9 +119,11 @@ pip install pytest   # test-only dependency; the package itself needs nothing
 pytest
 ```
 
-Layout: `src/agent2perfetto/` (`parser` → `lanes` → `trace` → `cli`), synthetic fixtures and
-a frozen golden trace under `tests/fixtures/`, the example session and its generated trace
-under `examples/`.
+Layout: `src/agent2perfetto/` — a three-stage pipeline (`parser` adapter →
+`ir` Agent Trace IR → `trace` Perfetto emitter → `cli`), synthetic fixtures and
+a frozen golden trace under `tests/fixtures/`, the example session and its
+generated trace under `examples/`, and the IR schema at
+[docs/agent-trace-ir.md](docs/agent-trace-ir.md).
 
 ## License
 

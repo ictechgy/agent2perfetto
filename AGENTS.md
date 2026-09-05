@@ -9,14 +9,22 @@ approximation notes, and differentiation.
 
 ```
 src/agent2perfetto/
-  parser.py  tolerant JSONL → typed Records + ParseStats (skip+count malformed/unknown; --strict raises)
+  parser.py  Claude Code adapter: tolerant JSONL → typed Records + ParseStats (skip+count malformed/unknown; --strict raises)
+  ir.py      Agent Trace IR — vendor-neutral middle layer (schema: docs/agent-trace-ir.md); from_claude_session, to_json/from_json
   lanes.py   context lanes: ctx_* = per-call occupancy, spend_* = cumulative sums
-  trace.py   Chrome Trace Event builder (M/X/C/i/s+f), deterministic ordering, _shallow_truncate previews
+  trace.py   Perfetto emitter from the IR (M/X/C/i/s+f), deterministic ordering, _shallow_truncate previews
   cli.py     argparse CLI: input, -o, --open (browser-local only), --strict
 tests/fixtures/   synthetic valid/malformed/empty sessions + FROZEN golden_trace_events.json
 examples/         sample session + its generated trace (checked in)
 scripts/validate_trace.py   stdlib self-check for any output trace
 ```
+
+Pipeline is three stages: adapter (parser.py) → IR (ir.py) → emitter (trace.py).
+New agent log formats enter as new adapters producing `ir.AgentTrace`; new
+outputs enter as new emitters. The bypass contract — the IR path renders
+byte-identically to the frozen golden — is
+`tests/test_ir.py::test_bypass_ir_path_matches_golden`; run it after touching
+`ir.py` / `trace.py`.
 
 ## Commands
 
@@ -43,11 +51,11 @@ python scripts/validate_trace.py <trace.json>   # self-check any output
 - **Tolerance**: malformed JSON lines, non-object lines, unknown record types, and
   missing/bad timestamps are skipped and counted (warnings to stderr); unknown top-level
   fields are counted, not dropped silently; `--strict` turns the first problem into a
-  failure. Known open issue: `json.loads` raises `RecursionError` on ~100k+-deep lines —
-  widen the except clause if you fix it rather than letting it crash the run.
-- **Previews are bounded** by `_shallow_truncate` (500 chars): result previews and user
-  prompts. Known open issue: tool_use `args.input` is still embedded verbatim — wrap it
-  in `_shallow_truncate` if you touch `trace.py`.
+  failure. Pathologically deep lines (`json.loads` `RecursionError` at ~100k+ nesting)
+  count as malformed too — keep that except clause wide.
+- **Previews are bounded** by `_shallow_truncate` (500 chars): result previews, user
+  prompts, and tool_use `args.input`. Any new field that embeds caller-controlled
+  payloads must go through `_shallow_truncate` as well.
 - **Privacy**: never read or copy real `~/.claude` transcripts into this repo. Fixtures
   are synthetic with realistic field shapes. `--open` only opens a URL in the browser;
   the trace is never uploaded.

@@ -1,48 +1,49 @@
 # HANDOFF — what the next session should do
 
-State at writing: v0.1.0, 3 commits, 24/24 tests green, clean tree, **no remote, not on PyPI**.
+State at writing: v0.2.0 (unreleased), clean tree. P2 bugs fixed, Agent Trace IR
+refactor (기획서 v0.2.0) landed, all tests green. **Still no remote, not on PyPI.**
 Read `AGENTS.md` first (invariants, golden-regeneration recipe, counter semantics).
 
-## 1. Do first — two open P2 bugs (both small, both probed & documented)
+## 1. DONE since last handoff (for context)
 
-- [ ] **tool_use `input` is embedded verbatim/unbounded in trace args.** A 10MB Write input
-      produces a 10MB trace (probed). Fix: wrap with the existing `_shallow_truncate` —
-      `trace.py`, tool_use slice `args`: `"input": _shallow_truncate(tu.input)`.
-      Add a bounded-size test next to `test_preview_is_bounded_for_huge_payloads`.
-- [ ] **RecursionError crash on pathological lines.** A single ~100k-deep JSON line makes
-      `json.loads` raise `RecursionError`, which the parser's `except json.JSONDecodeError`
-      does not catch → whole conversion dies (probed at 200k; 20k is fine). Fix: catch
-      `(json.JSONDecodeError, RecursionError)` in `parser.parse_lines` and count as
-      malformed. Add a deep-line fixture + test.
-- [ ] P3 while there: `tests/test_golden.py` docstring still says "cumulative token sums" —
-      update wording to occupancy/spend.
-- [ ] Commit as one "fix" commit, then regenerate `examples/sample_session.perfetto.json`
-      if output changed (it shouldn't — the example has no huge inputs).
+- [x] **P2 fixed — tool_use `input` bounded.** Wrapped in `_shallow_truncate`;
+      bounded-size test in `tests/test_trace.py`.
+- [x] **P2 fixed — RecursionError on ~100k-deep lines.** Parser counts them as
+      malformed; lenient + strict tests in `tests/test_parser.py`.
+- [x] **P3 fixed** — test_golden docstring wording (occupancy/spend).
+- [x] **기획서-크로스에이전트-노멀라이저.md v0.2.0 landed**: pipeline is now
+      adapter (parser.py) → Agent Trace IR (ir.py) → emitter (trace.py).
+      Schema doc: `docs/agent-trace-ir.md`. Bypass regression
+      (IR path == frozen golden == session path == JSON round-trip) in
+      `tests/test_ir.py`. Example regenerated (metadata only — converter version
+      0.2.0; traceEvents byte-identical).
 
-## 2. Ship it
+## 2. Ship it (nothing else blocks release)
 
 - [ ] GitHub repo + push; CI (`.github/workflows/ci.yml`) has never run — confirm green on
       the 3.10 and 3.13 matrix.
 - [ ] PyPI publish (`agent2perfetto` name — verify availability; low collision risk).
       Then flip README quickstart install line to real commands.
 
-## 3. First-publication asset (from 기획서 strategy)
+## 3. First-publication asset
 
 - [ ] Record the 1-minute demo GIF: one JSONL → `--open` → scroll Perfetto UI (turns/tools
       slices, flows, ctx/spend counters). This GIF *is* the launch — the tool sells itself
       visually. Use `examples/sample_session.jsonl` or a sanitized real session.
+      Needs a human with a browser; cannot be produced headlessly.
 
-## 4. v0.2 — adapter line (from 기획서, in order)
+## 4. Next code work (기획서 order)
 
-- [ ] **OTel GenAI adapter**: second input format behind the same parser interface.
-- [ ] **yield-audit export**: `yield export --perfetto` in `../yield-audit` calling this
-      converter on its normalized event model (M5 cache-locality and M10 handoff lanes
-      become native tracks). Cross-repo work — coordinate with the yield-audit HANDOFF.
-- [ ] **Subagent/async slices**: subagent sessions as separate processes with `s`/`f`
-      handoff arrows (Claude Code `isSidechain` records already parsed but unrendered).
-- [ ] v0.3 line: proto-format exporter (Perfetto's recommended format), context-guard
-      audit overlay (death/survival coloring on ctx lanes), "waste browser" (highlight
-      retry chains).
+- [ ] **v0.2.1 — codex adapter**: second input format producing `ir.AgentTrace`
+      directly (never touching the emitter). Cross-validate parsers with
+      yield-audit `transcripts/codex` on shared synthetic fixtures.
+- [ ] **yield-audit export**: `yield export --perfetto` in `../yield-audit` consuming
+      `ir.to_json` / this converter. Cross-repo — coordinate with the yield-audit HANDOFF.
+- [ ] **Subagent/async slices**: Claude Code `isSidechain` records are still parsed
+      but unrendered.
+- [ ] v0.3 line: `emit --otel` (IR → OTel spans), publish `docs/agent-trace-ir.md` as
+      the standard proposal, context-guard audit overlay (death/survival coloring on
+      ctx lanes), "waste browser" (highlight retry chains).
 
 ## 5. Known limits to keep honest
 
@@ -55,6 +56,8 @@ Read `AGENTS.md` first (invariants, golden-regeneration recipe, counter semantic
 ## Context pointers
 
 - Golden regeneration procedure (hand-verify → freeze → update hand-computed tests) is in
-  `AGENTS.md` — follow it exactly whenever `lanes.py`/`trace.py` mapping changes.
+  `AGENTS.md` — follow it exactly whenever `lanes.py`/`trace.py` mapping changes. The IR
+  bypass test (`tests/test_ir.py`) must stay green across any refactor.
 - Differentiation table in README (LangSmith/ccusage/Perfetto-MCP) is part of the launch
   story; keep it current when v0.2 adapters land.
+- Strategy docs: 기획서.md (v0.1 launch), 기획서-크로스에이전트-노멀라이저.md (IR/normalizer line).

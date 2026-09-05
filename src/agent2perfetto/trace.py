@@ -1,4 +1,10 @@
-"""Build a Perfetto-compatible Chrome Trace Event JSON dict from a parsed session."""
+"""Build a Perfetto-compatible Chrome Trace Event JSON dict from an Agent Trace IR.
+
+This is the Perfetto emitter of the three-stage pipeline
+(adapter → IR (ir.py) → emitter): it consumes the vendor-neutral IR, so any
+adapter (Claude Code today, other agent logs later) renders through the
+same mapping.
+"""
 
 from __future__ import annotations
 
@@ -6,11 +12,10 @@ import bisect
 import json
 from datetime import datetime, timezone
 
-from . import __version__
+from . import __version__, ir as ir_module
+from .ir import KIND_MODEL_CALL, AgentTrace
 from .lanes import APPROXIMATION_NOTE, OCC_COUNTERS, SPEND_COUNTERS, compute_context_lanes
-from .parser import Session
 
-SOURCE_NAME = "claude-code-jsonl"
 TURNS_TID = 1
 TOOLS_TID = 2
 TURN_THREAD_NAME = "turns"
@@ -71,36 +76,35 @@ def _metadata_event(pid: int, tid: int, name: str, value: str) -> dict:
     return {"ph": "M", "name": name, "pid": pid, "tid": tid, "ts": 0, "args": {"name": value}}
 
 
-def _pair_tool_calls(records):
-    """Pair tool_use blocks with the first later tool_result sharing their id.
+def _pair_tool_calls(turns):
+    """Pair tool_call blocks with the first later tool_result sharing their id.
 
-    Returns (pairs, unmatched_uses) where pairs maps tool_use_id to
-    (use_record, ToolUse, result_record, ToolResult) and unmatched_uses is a
-    list of (use_record, ToolUse) with no later result (orphan results are
+    Returns (pairs, unmatched_calls) where pairs maps tool_use_id to
+    (call_turn, IRToolCall, result_turn, IRToolResult) and unmatched_calls is a
+    list of (turn, IRToolCall) with no later result (orphan results are
     still rendered as slices by the caller).
     """
-    uses = [(r, tu) for r in records for tu in r.tool_uses]
+    calls = [(t, c) for t in turns for c in t.tool_calls]
     results_by_id: dict = {}
-    for r in records:
-        for tr in r.tool_results:
-            results_by_id.setdefault(tr.tool_use_id, []).append(r)
+    for t in turns:
+        for tr in t.tool_results:
+            results_by_id.setdefault(tr.tool_use_id, []).append(t)
     pairs = {}
     matched = set()
-    for use_rec, tu in uses:
-        for result_rec in results_by_id.get(tu.id, ()):
-            if result_rec.seq > use_rec.seq:
-                result = next(t for t in result_rec.tool_results if t.tool_use_id == tu.id)
-                pairs[tu.id] = (use_rec, tu, result_rec, result)
-                matched.add(tu.id)
+    for call_turn, call in calls:
+        for result_turn in results_by_id.get(call.id, ()):
+            if result_turn.seq > call_turn.seq:
+                result = next(t for t in result_turn.tool_results if t.tool_use_id == call.id)
+                pairs[call.id] = (call_turn, call, result_turn, result)
+                matched.add(call.id)
                 break
-    unmatched = [(r, tu) for r, tu in uses if tu.id not in matched]
+    unmatched = [(t, c) for t, c in calls if c.id not in matched]
     return pairs, unmatched
 
 
-def _metadata(session: Session, models: list, base_us, generated_at) -> dict:
-    stats = session.stats
+def _metadata(source: str, stats, models: list, base_us, generated_at) -> dict:
     md = {
-        "source": SOURCE_NAME,
+        "source": source,
         "converter": f"agent2perfetto {__version__}",
         "converter_version": __version__,
         "models_observed": models,
@@ -120,24 +124,32 @@ def _metadata(session: Session, models: list, base_us, generated_at) -> dict:
     return md
 
 
-def build_trace(session: Session, *, generated_at: str | None = None) -> dict:
+def build_trace(source, *, generated_at: str | None = None) -> dict:
     """Return {"traceEvents": [...], "displayTimeUnit": "ms", "metadata": {...}}.
 
-    Deterministic: the same parsed session yields byte-identical traceEvents
-    (only metadata.generated_at varies between runs).
+    Accepts an AgentTrace IR or a parsed Claude Code session (parser.Session);
+    the session is normalized through the IR either way. Deterministic: the
+    same input yields byte-identical traceEvents (only metadata.generated_at
+    varies between runs).
     """
-    records = list(session.records)
-    models = sorted({r.model for r in records if r.model})
-    if not records:
+    trace_ir = source if isinstance(source, AgentTrace) else ir_module.from_claude_session(source)
+    return build_trace_from_ir(trace_ir, generated_at=generated_at)
+
+
+def build_trace_from_ir(trace_ir: AgentTrace, *, generated_at: str | None = None) -> dict:
+    """Render the Agent Trace IR as Perfetto/Chrome Trace Event JSON."""
+    turns = trace_ir.events()
+    models = sorted({t.model for t in turns if t.model})
+    if not turns:
         return {
             "traceEvents": [],
             "displayTimeUnit": "ms",
-            "metadata": _metadata(session, models, None, generated_at),
+            "metadata": _metadata(trace_ir.source, trace_ir.stats, models, None, generated_at),
         }
 
-    base_us = min(r.epoch_us for r in records)
-    times = sorted({r.epoch_us for r in records})
-    pids = {sid: pid for pid, sid in enumerate(sorted({r.session_id for r in records}), start=1)}
+    base_us = min(t.epoch_us for t in turns)
+    times = sorted({t.epoch_us for t in turns})
+    pids = {sid: pid for pid, sid in enumerate(sorted({t.session_id for t in turns}), start=1)}
 
     meta = []
     for sid in sorted(pids):
@@ -155,17 +167,17 @@ def build_trace(session: Session, *, generated_at: str | None = None) -> dict:
         idx = bisect.bisect_right(times, epoch_us)
         return times[idx] if idx < len(times) else None
 
-    pairs, unmatched_uses = _pair_tool_calls(records)
+    pairs, unmatched_calls = _pair_tool_calls(turns)
     flow_ids = {tool_use_id: i for i, tool_use_id in enumerate(sorted(pairs), start=1)}
 
-    for r in sorted(records, key=lambda r: (r.epoch_us, r.seq)):
-        ts = r.epoch_us - base_us
-        nxt = next_us(r.epoch_us)
-        pid = pids[r.session_id]
-        if r.type == "assistant":
+    for t in turns:
+        ts = t.epoch_us - base_us
+        nxt = next_us(t.epoch_us)
+        pid = pids[t.session_id]
+        if t.kind == KIND_MODEL_CALL:
             dur_estimated = nxt is None
-            turn_dur = (nxt - r.epoch_us) if nxt is not None else ESTIMATED_TURN_DUR_US
-            args = {"model": r.model, "uuid": r.uuid, "usage": dict(r.usage)}
+            turn_dur = (nxt - t.epoch_us) if nxt is not None else ESTIMATED_TURN_DUR_US
+            args = {"model": t.model, "uuid": t.uuid, "usage": dict(t.usage)}
             if dur_estimated:
                 args["dur_estimated"] = True
             emit(
@@ -182,32 +194,32 @@ def build_trace(session: Session, *, generated_at: str | None = None) -> dict:
                     "args": args,
                 },
             )
-            for tu in r.tool_uses:
-                pair = pairs.get(tu.id)
+            for call in t.tool_calls:
+                pair = pairs.get(call.id)
                 if pair is not None:
-                    tool_dur = pair[2].epoch_us - r.epoch_us
+                    tool_dur = pair[2].epoch_us - t.epoch_us
                 else:
-                    tool_dur = (nxt - r.epoch_us) if nxt is not None else 0
+                    tool_dur = (nxt - t.epoch_us) if nxt is not None else 0
                 emit(
                     ts,
                     _RANK["tool_use"],
                     {
                         "ph": "X",
                         "cat": "tool_call",
-                        "name": tu.name,
+                        "name": call.name,
                         "pid": pid,
                         "tid": TOOLS_TID,
                         "ts": ts,
                         "dur": max(0, tool_dur),
                         "args": {
-                            "tool_use_id": tu.id,
-                            "input": _shallow_truncate(tu.input),
-                            "usage": dict(r.usage),
+                            "tool_use_id": call.id,
+                            "input": _shallow_truncate(call.input),
+                            "usage": dict(t.usage),
                         },
                     },
                 )
                 if pair is not None:
-                    fid = flow_ids[tu.id]
+                    fid = flow_ids[call.id]
                     emit(
                         ts,
                         _RANK["flow_start"],
@@ -235,47 +247,46 @@ def build_trace(session: Session, *, generated_at: str | None = None) -> dict:
                             "bp": "e",
                         },
                     )
-        elif r.type == "user":
-            if r.tool_results:
-                for tr in r.tool_results:
-                    use = pairs.get(tr.tool_use_id)
-                    name = f"result {use[1].name}" if use else "tool result"
-                    dur = (nxt - r.epoch_us) if nxt is not None else 0
-                    emit(
-                        ts,
-                        _RANK["tool_result"],
-                        {
-                            "ph": "X",
-                            "cat": "tool_result",
-                            "name": name,
-                            "pid": pid,
-                            "tid": TOOLS_TID,
-                            "ts": ts,
-                            "dur": max(0, dur),
-                            "args": {
-                                "tool_use_id": tr.tool_use_id,
-                                "is_error": tr.is_error,
-                                "result_preview": _preview(tr.content),
-                            },
-                        },
-                    )
-            elif r.user_prompt is not None:
+        elif t.kind == ir_module.KIND_TOOL_TURN:
+            for tr in t.tool_results:
+                use = pairs.get(tr.tool_use_id)
+                name = f"result {use[1].name}" if use else "tool result"
+                dur = (nxt - t.epoch_us) if nxt is not None else 0
                 emit(
                     ts,
-                    _RANK["user_prompt"],
+                    _RANK["tool_result"],
                     {
-                        "ph": "i",
-                        "cat": "user",
-                        "name": "user prompt",
+                        "ph": "X",
+                        "cat": "tool_result",
+                        "name": name,
                         "pid": pid,
-                        "tid": TURNS_TID,
+                        "tid": TOOLS_TID,
                         "ts": ts,
-                        "s": "t",
-                        "args": {"preview": _preview(r.user_prompt)},
+                        "dur": max(0, dur),
+                        "args": {
+                            "tool_use_id": tr.tool_use_id,
+                            "is_error": tr.is_error,
+                            "result_preview": _preview(tr.content),
+                        },
                     },
                 )
+        elif t.kind == ir_module.KIND_USER_TURN and t.user_prompt is not None:
+            emit(
+                ts,
+                _RANK["user_prompt"],
+                {
+                    "ph": "i",
+                    "cat": "user",
+                    "name": "user prompt",
+                    "pid": pid,
+                    "tid": TURNS_TID,
+                    "ts": ts,
+                    "s": "t",
+                    "args": {"preview": _preview(t.user_prompt)},
+                },
+            )
 
-    for sample in compute_context_lanes(records):
+    for sample in compute_context_lanes(turns):
         ts = sample.epoch_us - base_us
         emit(
             ts,
@@ -297,5 +308,5 @@ def build_trace(session: Session, *, generated_at: str | None = None) -> dict:
     return {
         "traceEvents": trace_events,
         "displayTimeUnit": "ms",
-        "metadata": _metadata(session, models, base_us, generated_at),
+        "metadata": _metadata(trace_ir.source, trace_ir.stats, models, base_us, generated_at),
     }

@@ -10,6 +10,7 @@ import webbrowser
 from pathlib import Path
 
 from . import __version__
+from .ir import from_claude_session
 from .parser import StrictParseError, parse_file
 from .trace import build_trace
 
@@ -58,7 +59,8 @@ def main(argv=None) -> int:
         print(f"agent2perfetto: cannot read {src}: {exc}", file=sys.stderr)
         return 1
 
-    trace = build_trace(session)
+    # Three-stage pipeline: adapter (parser) → IR → Perfetto emitter.
+    trace = build_trace(from_claude_session(session))
     dst.write_text(json.dumps(trace, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
     stats = session.stats

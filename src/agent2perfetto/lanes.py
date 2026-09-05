@@ -17,6 +17,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .ir import KIND_MODEL_CALL
+
 OCC_COUNTERS = ("ctx_total", "ctx_input", "ctx_cache_read", "ctx_cache_create")
 SPEND_COUNTERS = ("spend_total", "spend_input", "spend_cache_read", "spend_cache_create")
 
@@ -37,8 +39,8 @@ class LaneSample:
     values: dict
 
 
-def compute_context_lanes(records) -> list:
-    """Return one LaneSample per assistant record with occupancy + spend values."""
+def compute_context_lanes(turns) -> list:
+    """Return one LaneSample per model-call turn with occupancy + spend values."""
     cum = {
         "input_tokens": 0,
         "cache_creation_input_tokens": 0,
@@ -46,14 +48,14 @@ def compute_context_lanes(records) -> list:
     }
     samples = []
     ordered = sorted(
-        (r for r in records if r.type == "assistant"),
-        key=lambda r: (r.epoch_us, r.seq),
+        (t for t in turns if getattr(t, "kind", None) == KIND_MODEL_CALL),
+        key=lambda t: (t.epoch_us, t.seq),
     )
-    for r in ordered:
+    for t in ordered:
         call = {
-            "input_tokens": r.usage.get("input_tokens", 0),
-            "cache_creation_input_tokens": r.usage.get("cache_creation_input_tokens", 0),
-            "cache_read_input_tokens": r.usage.get("cache_read_input_tokens", 0),
+            "input_tokens": t.usage.get("input_tokens", 0),
+            "cache_creation_input_tokens": t.usage.get("cache_creation_input_tokens", 0),
+            "cache_read_input_tokens": t.usage.get("cache_read_input_tokens", 0),
         }
         values = {
             "ctx_input": call["input_tokens"],
@@ -71,5 +73,5 @@ def compute_context_lanes(records) -> list:
         values["spend_total"] = (
             values["spend_input"] + values["spend_cache_read"] + values["spend_cache_create"]
         )
-        samples.append(LaneSample(epoch_us=r.epoch_us, session_id=r.session_id, values=values))
+        samples.append(LaneSample(epoch_us=t.epoch_us, session_id=t.session_id, values=values))
     return samples
