@@ -27,7 +27,10 @@ This project is exactly that adapter.
 Requires Python 3.10+, stdlib only, zero runtime network calls.
 
 ```bash
-# from a checkout
+# from PyPI
+pip install agent2perfetto
+
+# or from a checkout
 pip install .
 
 # convert the checked-in example

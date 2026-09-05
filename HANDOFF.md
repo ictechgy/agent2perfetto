@@ -1,10 +1,10 @@
 # HANDOFF — what the next session should do
 
-State at writing: v0.2.0, public at **github.com/ictechgy/agent2perfetto**, CI green
-on the 3.10/3.13 matrix (run 33974819064). P2 bugs fixed, Agent Trace IR refactor
-(기획서 v0.2.0) landed, all 37 tests green, 기획서.md purged from history +
-gitignored. Read `AGENTS.md` first (invariants, golden-regeneration recipe, counter
-semantics).
+State at writing: v0.2.0 **live on PyPI** (`pip install agent2perfetto`) and public at
+**github.com/ictechgy/agent2perfetto**, CI green on the 3.10/3.13 matrix. P2 bugs fixed,
+Agent Trace IR refactor (기획서 v0.2.0) landed, all 37 tests green, 기획서.md purged from
+history + gitignored. Read `AGENTS.md` first (invariants, golden-regeneration recipe,
+counter semantics).
 
 ## 1. DONE since last handoff (for context)
 
@@ -26,8 +26,11 @@ semantics).
 - [x] CI confirmed green on the 3.10 and 3.13 matrix. Cosmetic: actions warn about
       Node.js 20 deprecation (checkout@v4 / setup-python@v5 are force-run on Node 24) —
       bump the action versions some day; nothing fails today.
-- [ ] PyPI publish (`agent2perfetto` name — verify availability; low collision risk).
-      Then flip README quickstart install line to real commands.
+- [x] **PyPI: agent2perfetto 0.2.0 live** — trusted publishing via pending publisher,
+      release-triggered (`.github/workflows/pypi.yml`, publish job runs in the `pypi`
+      environment). Publishing recipe: bump `__version__`, push, `gh release create
+      vX.Y.Z` — the workflow builds and uploads; the tag must match `__version__`.
+      README quickstart flipped to `pip install agent2perfetto`.
 
 ## 3. First-publication asset
 
