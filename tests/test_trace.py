@@ -17,7 +17,7 @@ def test_top_level_shape():
     assert trace["displayTimeUnit"] == "ms"
     md = trace["metadata"]
     assert md["source"] == "claude-code-jsonl"
-    assert md["converter_version"] == "0.2.0"
+    assert md["converter_version"] == "0.2.1"
     assert md["models_observed"] == ["claude-fixture-opus", "claude-fixture-sonnet"]
     assert md["generated_at"]
     assert "approximate" in md["approximation_note"]

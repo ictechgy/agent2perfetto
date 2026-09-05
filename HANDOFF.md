@@ -1,10 +1,10 @@
 # HANDOFF — what the next session should do
 
-State at writing: v0.2.0 **live on PyPI** (`pip install agent2perfetto`) and public at
-**github.com/ictechgy/agent2perfetto**, CI green on the 3.10/3.13 matrix. P2 bugs fixed,
-Agent Trace IR refactor (기획서 v0.2.0) landed, all 37 tests green, 기획서.md purged from
-history + gitignored. Read `AGENTS.md` first (invariants, golden-regeneration recipe,
-counter semantics).
+State at writing: v0.2.1 (Codex adapter) **live on PyPI** (`pip install agent2perfetto`)
+and public at **github.com/ictechgy/agent2perfetto**, CI green on the 3.10/3.13 matrix.
+P2 bugs fixed, Agent Trace IR refactor (기획서 v0.2.0) landed, all tests green, 기획서.md
+purged from history + gitignored. Read `AGENTS.md` first (invariants, golden-regeneration
+recipe, counter semantics).
 
 ## 1. DONE since last handoff (for context)
 
@@ -41,9 +41,13 @@ counter semantics).
 
 ## 4. Next code work (기획서 order)
 
-- [ ] **v0.2.1 — codex adapter**: second input format producing `ir.AgentTrace`
-      directly (never touching the emitter). Cross-validate parsers with
-      yield-audit `transcripts/codex` on shared synthetic fixtures.
+- [x] **v0.2.1 — codex adapter landed**: `codex.py` parses rollout JSONL straight into
+      `ir.AgentTrace` (no parser.py dependency beyond ISO normalization); CLI auto-detects
+      the format (`--format {auto,claude,codex}`). Cross-validated against yield-audit's
+      CodexAdapter on the shared fixture (tool uses incl. Bash normalization, error flags,
+      token usage all agree — run their adapter with a SHARED ctx dict per file).
+      Approximations documented in the module docstring: usage merges onto the assistant
+      message timestamp; codex has no cache-creation counter.
 - [ ] **yield-audit export**: `yield export --perfetto` in `../yield-audit` consuming
       `ir.to_json` / this converter. Cross-repo — coordinate with the yield-audit HANDOFF.
 - [ ] **Subagent/async slices**: Claude Code `isSidechain` records are still parsed

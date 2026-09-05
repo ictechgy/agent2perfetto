@@ -17,7 +17,12 @@ a new emitter. The IR is a data contract, not a product.
   unknown versions; producers must not repurpose existing fields.
 - **Status**: implemented in `src/agent2perfetto/ir.py`
   (`to_json` / `from_json` are the normative serializer); consumed by the
-  Perfetto emitter in `trace.py`.
+  Perfetto emitter in `trace.py`. Adapters: Claude Code (`parser.py` via
+  `from_claude_session`) and Codex CLI (`codex.py`, rollout JSONL → IR
+  directly; usage mapping: `cached_input_tokens` → `cache_read_input_tokens`,
+  no cache-creation counter exists in codex logs so `cache_creation_input_tokens`
+  stays 0; shell-family tools normalize to `Bash`; the first `token_count`
+  event after an assistant message merges in as that call's usage).
 - **Design rule**: the IR carries what the harnesses actually report, with
   source order preserved. It does not interpret (no derived "context size",
   no guessed durations) — interpretation belongs to emitters.

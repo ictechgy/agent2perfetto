@@ -2,11 +2,13 @@
 
 **Don't build a viewer — put agent traces in the best one.**
 
-`agent2perfetto` converts an agent session log (Claude Code JSONL) into a
-[Perfetto](https://perfetto.dev/) / Chrome Trace Event Format JSON that loads in
+`agent2perfetto` converts agent session logs into
+[Perfetto](https://perfetto.dev/) / Chrome Trace Event JSON that loads in
 [ui.perfetto.dev](https://ui.perfetto.dev) — the free, browser-based trace viewer Google built
 for Chrome and Android profiling. You get hierarchical slices, counter time series, flow
 arrows, and PerfettoSQL over your agent session without anyone writing a line of viewer code.
+Supported inputs: **Claude Code** session JSONL and **Codex CLI** rollout logs (auto-detected;
+`--format` to override).
 
 ## The problem
 
@@ -39,6 +41,9 @@ agent2perfetto examples/sample_session.jsonl
 
 # convert one of your own sessions and open the viewer
 agent2perfetto ~/.claude/projects/<project>/session.jsonl --open
+
+# Codex CLI rollout logs work too (format is auto-detected)
+agent2perfetto ~/.codex/sessions/2026/09/05/rollout-*.jsonl --open
 ```
 
 `--open` runs macOS `open https://ui.perfetto.dev` (falls back to your browser elsewhere),
@@ -106,9 +111,12 @@ browser locally. Nothing is uploaded, no account exists, no telemetry exists.
 
 - v0.1 supported Claude Code JSONL only. v0.2 introduces the vendor-neutral
   **Agent Trace IR** ([docs/agent-trace-ir.md](docs/agent-trace-ir.md)): new agent
-  logs (Codex next, then OTel GenAI) enter as adapters into the same IR, so the
-  same viewer, lanes, and PerfettoSQL work across harnesses. Subagent/async
-  slices are also planned.
+  logs enter as adapters into the same IR, so the same viewer, lanes, and
+  PerfettoSQL work across harnesses. The **Codex CLI** rollout adapter landed in
+  v0.2.1 (cross-validated against the yield-audit Codex parser on shared
+  fixtures; codex `cached_input_tokens` maps to `cache_read`, codex reports no
+  cache-creation counter, and codex shell tools render as `Bash` with list
+  commands joined). Subagent/async slices are also planned.
 - Perfetto's JSON format is the legacy entry point; a proto-format exporter is on the roadmap.
 - Multiple `sessionId`s in one file become multiple processes; per-subagent processes and
   context-composition lanes (system prompt / files / MCP schemas) are future work.

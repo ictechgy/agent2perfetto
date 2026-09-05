@@ -7,7 +7,7 @@
    "tid": 0,
    "ts": 0,
    "args": {
-    "name": "agent session sess-fixture-0001"
+    "name": "agent session cccccccc-0000-4000-8000-000000000001"
    }
   },
   {
@@ -50,14 +50,14 @@
    "tid": 1,
    "ts": 1000000,
    "args": {
-    "ctx_total": 350,
+    "ctx_total": 300,
     "ctx_input": 100,
     "ctx_cache_read": 200,
-    "ctx_cache_create": 50,
-    "spend_total": 350,
+    "ctx_cache_create": 0,
+    "spend_total": 300,
     "spend_input": 100,
     "spend_cache_read": 200,
-    "spend_cache_create": 50
+    "spend_cache_create": 0
    }
   },
   {
@@ -69,13 +69,13 @@
    "ts": 1000000,
    "dur": 1000000,
    "args": {
-    "model": "claude-fixture-sonnet",
-    "uuid": "u-0002",
+    "model": "gpt-5.1-codex",
+    "uuid": null,
     "usage": {
      "input_tokens": 100,
      "output_tokens": 90,
-     "cache_creation_input_tokens": 50,
-     "cache_read_input_tokens": 200
+     "cache_read_input_tokens": 200,
+     "cache_creation_input_tokens": 0
     }
    }
   },
@@ -88,15 +88,15 @@
    "ts": 1000000,
    "dur": 1000000,
    "args": {
-    "tool_use_id": "toolu_001",
+    "tool_use_id": "call_001",
     "input": {
      "command": "ls -la"
     },
     "usage": {
      "input_tokens": 100,
      "output_tokens": 90,
-     "cache_creation_input_tokens": 50,
-     "cache_read_input_tokens": 200
+     "cache_read_input_tokens": 200,
+     "cache_creation_input_tokens": 0
     }
    }
   },
@@ -118,7 +118,7 @@
    "ts": 2000000,
    "dur": 1000000,
    "args": {
-    "tool_use_id": "toolu_001",
+    "tool_use_id": "call_001",
     "is_error": false,
     "result_preview": "\"file_a.py\\nfile_b.py\""
    }
@@ -145,10 +145,10 @@
     "ctx_input": 30,
     "ctx_cache_read": 400,
     "ctx_cache_create": 0,
-    "spend_total": 780,
+    "spend_total": 730,
     "spend_input": 130,
     "spend_cache_read": 600,
-    "spend_cache_create": 50
+    "spend_cache_create": 0
    }
   },
   {
@@ -160,13 +160,13 @@
    "ts": 3000000,
    "dur": 2000000,
    "args": {
-    "model": "claude-fixture-sonnet",
-    "uuid": "u-0004",
+    "model": "gpt-5.1-codex",
+    "uuid": null,
     "usage": {
      "input_tokens": 30,
      "output_tokens": 120,
-     "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 400
+     "cache_read_input_tokens": 400,
+     "cache_creation_input_tokens": 0
     }
    }
   },
@@ -179,15 +179,15 @@
    "ts": 3000000,
    "dur": 2000000,
    "args": {
-    "tool_use_id": "toolu_002",
+    "tool_use_id": "call_002",
     "input": {
      "command": "python -m pytest -q"
     },
     "usage": {
      "input_tokens": 30,
      "output_tokens": 120,
-     "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 400
+     "cache_read_input_tokens": 400,
+     "cache_creation_input_tokens": 0
     }
    }
   },
@@ -209,9 +209,9 @@
    "ts": 5000000,
    "dur": 1500000,
    "args": {
-    "tool_use_id": "toolu_002",
-    "is_error": false,
-    "result_preview": "\"3 passed in 0.02s\""
+    "tool_use_id": "call_002",
+    "is_error": true,
+    "result_preview": "\"1 failed in 0.02s\""
    }
   },
   {
@@ -232,14 +232,14 @@
    "tid": 1,
    "ts": 6500000,
    "args": {
-    "ctx_total": 530,
+    "ctx_total": 520,
     "ctx_input": 20,
     "ctx_cache_read": 500,
-    "ctx_cache_create": 10,
-    "spend_total": 1310,
+    "ctx_cache_create": 0,
+    "spend_total": 1250,
     "spend_input": 150,
     "spend_cache_read": 1100,
-    "spend_cache_create": 60
+    "spend_cache_create": 0
    }
   },
   {
@@ -251,13 +251,13 @@
    "ts": 6500000,
    "dur": 1000000,
    "args": {
-    "model": "claude-fixture-opus",
-    "uuid": "u-0006",
+    "model": "gpt-5.1-codex",
+    "uuid": null,
     "usage": {
      "input_tokens": 20,
      "output_tokens": 40,
-     "cache_creation_input_tokens": 10,
-     "cache_read_input_tokens": 500
+     "cache_read_input_tokens": 500,
+     "cache_creation_input_tokens": 0
     },
     "dur_estimated": true
    }
@@ -265,14 +265,13 @@
  ],
  "displayTimeUnit": "ms",
  "metadata": {
-  "source": "claude-code-jsonl",
+  "source": "codex-rollout-jsonl",
   "converter": "agent2perfetto 0.2.1",
   "converter_version": "0.2.1",
   "models_observed": [
-   "claude-fixture-opus",
-   "claude-fixture-sonnet"
+   "gpt-5.1-codex"
   ],
-  "generated_at": "2026-09-05T16:21:53.214864Z",
+  "generated_at": "2026-09-05T16:21:53.256802Z",
   "approximation_note": "ctx_* counters estimate per-call context occupancy from the usage fields that assistant call reported (input + cache_read + cache_creation tokens). spend_* counters are cumulative sums of the same fields over the session (billing trajectory, not context size). Both come from client-reported usage, not provider measurements; treat them as approximate. Slices whose duration has no later event to bound it are estimates.",
   "warnings": {
    "malformed_lines": 0,

@@ -1,0 +1,13 @@
+{"timestamp": "2026-09-05T12:00:00.000Z", "type": "session_meta", "payload": {"id": "cccccccc-0000-4000-8000-000000000001", "cwd": "/tmp/demo", "originator": "codex_cli_rs", "cli_version": "0.5.0"}}
+{"timestamp": "2026-09-05T12:00:00.000Z", "type": "turn_context", "payload": {"cwd": "/tmp/demo", "model": "gpt-5.1-codex"}}
+{"timestamp": "2026-09-05T12:00:00.000Z", "type": "response_item", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "List the files, then run the tests."}]}}
+{"timestamp": "2026-09-05T12:00:01.000Z", "type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "I will list the files first."}]}}
+{"timestamp": "2026-09-05T12:00:01.000Z", "type": "response_item", "payload": {"type": "function_call", "call_id": "call_001", "name": "shell", "arguments": "{\"command\": [\"ls\", \"-la\"]}"}}
+{"timestamp": "2026-09-05T12:00:02.000Z", "type": "response_item", "payload": {"type": "function_call_output", "call_id": "call_001", "output": "{\"output\": \"file_a.py\\nfile_b.py\", \"metadata\": {\"exit_code\": 0}}"}}
+{"timestamp": "2026-09-05T12:00:02.500Z", "type": "event_msg", "payload": {"type": "token_count", "info": {"last_token_usage": {"input_tokens": 100, "cached_input_tokens": 200, "output_tokens": 90}}}}
+{"timestamp": "2026-09-05T12:00:03.000Z", "type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Running the tests now."}]}}
+{"timestamp": "2026-09-05T12:00:03.000Z", "type": "response_item", "payload": {"type": "function_call", "call_id": "call_002", "name": "shell", "arguments": "{\"command\": \"python -m pytest -q\"}"}}
+{"timestamp": "2026-09-05T12:00:05.000Z", "type": "response_item", "payload": {"type": "function_call_output", "call_id": "call_002", "output": "{\"output\": \"1 failed in 0.02s\", \"metadata\": {\"exit_code\": 1}}"}}
+{"timestamp": "2026-09-05T12:00:05.500Z", "type": "event_msg", "payload": {"type": "token_count", "info": {"last_token_usage": {"input_tokens": 30, "cached_input_tokens": 400, "output_tokens": 120}}}}
+{"timestamp": "2026-09-05T12:00:06.500Z", "type": "response_item", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Done considering the results."}]}}
+{"timestamp": "2026-09-05T12:00:07.000Z", "type": "event_msg", "payload": {"type": "token_count", "info": {"last_token_usage": {"input_tokens": 20, "cached_input_tokens": 500, "output_tokens": 40}}}}
