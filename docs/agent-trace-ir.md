@@ -111,3 +111,10 @@ gave; `kind` records the dominant role (`tool_turn` when results ride along).
 - No derived semantics: context occupancy, spend trajectories, and durations
   are emitter concerns (see the Perfetto emitter's approximation note).
 - No provider-side truth: the IR records client-reported usage only.
+
+## Consumers
+
+- The Perfetto emitter (`trace.py`) in this project.
+- [yield-audit](https://github.com/ictechgy/yield-audit)'s `export --perfetto`:
+  its Session model maps onto this IR through `agent2perfetto.ir` — the first
+  external consumer of the contract.

@@ -48,8 +48,12 @@ recipe, counter semantics).
       token usage all agree — run their adapter with a SHARED ctx dict per file).
       Approximations documented in the module docstring: usage merges onto the assistant
       message timestamp; codex has no cache-creation counter.
-- [ ] **yield-audit export**: `yield export --perfetto` in `../yield-audit` consuming
-      `ir.to_json` / this converter. Cross-repo — coordinate with the yield-audit HANDOFF.
+- [x] **yield-audit export shipped** (yield-audit v0.5.0, on PyPI): `yield-audit
+      export --perfetto` maps its vendor-neutral Session model onto this project's
+      Agent Trace IR (`agent2perfetto>=0.2.1` behind an optional `[perfetto]` extra —
+      yield-audit's zero-runtime-dep rule intact). First external IR consumer.
+      Note: ApiCall cache_read/write map straight onto IR cache keys; ToolUse turns
+      render as usage-less model_calls (0.2.2 lanes skip those, no zero-dip counters).
 - [ ] **Subagent/async slices**: Claude Code `isSidechain` records are still parsed
       but unrendered.
 - [ ] v0.3 line: `emit --otel` (IR → OTel spans), publish `docs/agent-trace-ir.md` as

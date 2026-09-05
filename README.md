@@ -106,6 +106,7 @@ browser locally. Nothing is uploaded, no account exists, no telemetry exists.
 | Perfetto itself                   | Provides the viewer and format but has no agent-domain adapter — that gap is exactly this project. |
 | Perfetto MCP servers              | The reverse direction (LLMs analyzing Perfetto traces). Here a human looks.    |
 | One-off "LLM trace JSON" scripts  | A maintained adapter with golden-fixture tests against schema drift, plus lane semantics. |
+| yield-audit                        | Measures *outcomes* (survival, waste, cost) over the same sessions. Its `export --perfetto` renders through this converter's Agent Trace IR — analysis and timeline share one data contract. |
 
 ## Limits & roadmap
 
